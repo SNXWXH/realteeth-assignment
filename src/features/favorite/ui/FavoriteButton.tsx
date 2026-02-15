@@ -1,26 +1,23 @@
-import { useState } from 'react';
 import { Button } from '@/shared/ui';
 import { CiStar } from 'react-icons/ci';
 import { FaStar } from 'react-icons/fa';
 
 type FavoriteButtonProps = {
-  initialFavorite?: boolean;
+  isFavorite: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
 };
 
 export const FavoriteButton = ({
-  initialFavorite = false,
+  isFavorite,
+  onToggle,
+  disabled = false,
 }: FavoriteButtonProps) => {
-  const [isFavorite, setIsFavorite] = useState(initialFavorite);
-
-  const handleClick = () => {
-    setIsFavorite((prev) => !prev);
-  };
-
   return (
     <div className='items-center px-2 py-1 rounded-2xl bg-[#ECEEF2] text-gray-500 text-sm gap-1.5 hover:bg-gray-200'>
-      <Button onClick={handleClick}>
+      <Button onClick={onToggle} disabled={disabled}>
         {isFavorite ? <FaStar /> : <CiStar />}
-        <label>{isFavorite ? '즐겨찾기 해체' : '즐겨찾기'}</label>
+        <label>{isFavorite ? '즐겨찾기 해제' : '즐겨찾기'}</label>
       </Button>
     </div>
   );
