@@ -1,0 +1,1 @@
+export { getWeatherIcon } from './get-weather-icon';

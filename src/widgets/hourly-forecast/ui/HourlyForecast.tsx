@@ -1,10 +1,5 @@
 import { Card } from '@/shared/ui';
-import {
-  IoSunnyOutline,
-  IoCloudyOutline,
-  IoRainyOutline,
-  IoSnowOutline,
-} from 'react-icons/io5';
+import { getWeatherIcon } from '@/shared/lib';
 
 type HourlyWeatherData = {
   time: string;
@@ -16,22 +11,6 @@ type HourlyWeatherData = {
 
 type HourlyForecastProps = {
   data: HourlyWeatherData[];
-};
-
-const getWeatherIcon = (condition: string) => {
-  const iconClass = 'text-4xl';
-  switch (condition) {
-    case 'sunny':
-      return <IoSunnyOutline className={`${iconClass} text-yellow-300`} />;
-    case 'cloudy':
-      return <IoCloudyOutline className={`${iconClass} text-gray-300`} />;
-    case 'rainy':
-      return <IoRainyOutline className={`${iconClass} text-blue-400`} />;
-    case 'snowy':
-      return <IoSnowOutline className={`${iconClass} text-blue-300`} />;
-    default:
-      return <IoSunnyOutline className={`${iconClass} text-yellow-300`} />;
-  }
 };
 
 export const HourlyForecast = ({ data }: HourlyForecastProps) => {
@@ -50,7 +29,7 @@ export const HourlyForecast = ({ data }: HourlyForecastProps) => {
               {hour.time}
             </p>
             <div className='mb-2 text-blue-400'>
-              {getWeatherIcon(hour.condition)}
+              {getWeatherIcon({ condition: hour.condition })}
             </div>
             <p className='text-lg font-bold text-gray-900 mb-1'>
               {hour.temperature}
