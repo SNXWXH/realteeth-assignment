@@ -4,10 +4,11 @@ import { getWeatherIcon } from '@/shared/lib';
 type DailyWeatherData = {
   day: string;
   date: string;
+  //임시로 해둠
   condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy';
   high: number;
   low: number;
-  precipitation?: number;
+  percent?: number;
 };
 
 type WeeklyForecastProps = {
@@ -16,35 +17,31 @@ type WeeklyForecastProps = {
 
 export const WeeklyForecast = ({ data }: WeeklyForecastProps) => {
   return (
-    <Card>
+    <Card className='overflow-hidden'>
       <h3 className='text-lg font-semibold text-gray-800 mb-4'>일별 예보</h3>
-      <div className='space-y-3'>
+      <div className='flex justify-center overflow-x-auto gap-6 pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100'>
         {data.map((day, index) => (
           <div
             key={index}
-            className='flex items-center justify-between py-3 px-2 rounded-lg'
+            className='flex flex-col items-center py-3 px-4 rounded-lg '
           >
-            <div className='flex items-center gap-4 flex-1'>
-              <p className='text-sm font-semibold text-gray-800 w-12'>
-                {day.day}
-              </p>
-              <p className='text-xs text-gray-500 w-16'>{day.date}</p>
-              <div className='flex items-center gap-2'>
-                {getWeatherIcon({ condition: day.condition })}
-                {day.precipitation !== undefined && day.precipitation > 0 && (
-                  <span className='text-xs text-blue-500'>
-                    {day.precipitation}%
-                  </span>
-                )}
-              </div>
+            <p className='text-sm font-semibold text-gray-800 mb-1'>
+              {day.day}
+            </p>
+            <p className='text-xs text-gray-500 mb-2'>{day.date}</p>
+            <div className='mb-2'>
+              {getWeatherIcon({ condition: day.condition })}
             </div>
-            <div className='flex items-center gap-4'>
-              <div className='flex items-center gap-2'>
-                <span className='text-sm text-gray-900 font-semibold'>
-                  {day.high}°
-                </span>
-                <span className='text-sm text-gray-500'>{day.low}°</span>
-              </div>
+            <p className='text-xs text-blue-500 mb-2 h-4'>
+              {day.percent !== undefined && day.percent > 0
+                ? `${day.percent}%`
+                : ''}
+            </p>
+            <div className='flex items-center gap-2'>
+              <span className='text-sm text-gray-900 font-semibold'>
+                {day.high}°
+              </span>
+              <span className='text-sm text-gray-500'>{day.low}°</span>
             </div>
           </div>
         ))}
