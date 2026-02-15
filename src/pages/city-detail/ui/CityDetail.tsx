@@ -25,6 +25,7 @@ import {
   calculateDaylight,
   getAirQualityLevel,
 } from '@/shared/lib';
+import { useFavorites } from '@/shared/hooks';
 
 type SearchLocation = {
   placeId: number;
@@ -34,12 +35,30 @@ type SearchLocation = {
   type: string;
 };
 
+type FavoriteLocationData = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+};
+
 function CityDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const locationData = location.state?.locationData as
     | SearchLocation
     | undefined;
+  const favoriteData = location.state?.favoriteData as
+    | FavoriteLocationData
+    | undefined;
+
+  const {
+    addFavorite,
+    removeFavorite,
+    isFavorite: checkIsFavorite,
+    getFavoriteByCoordinates,
+    canAddMore,
+  } = useFavorites();
 
   const [cityName, setCityName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -47,9 +66,37 @@ function CityDetail() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentCoords, setCurrentCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   useEffect(() => {
     const fetchWeatherData = async () => {
+      if (favoriteData) {
+        try {
+          setLoading(true);
+          setCityName(favoriteData.name);
+          setCurrentCoords({
+            latitude: favoriteData.latitude,
+            longitude: favoriteData.longitude,
+          });
+
+          const [weather, air] = await Promise.all([
+            getWeatherData(favoriteData.latitude, favoriteData.longitude),
+            getAirQualityData(favoriteData.latitude, favoriteData.longitude),
+          ]);
+
+          setWeatherData(weather);
+          setAirQuality(air);
+        } catch (error) {
+          console.error('날씨 데이터 조회 실패:', error);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       if (!locationData) {
         setLoading(false);
         return;
@@ -68,6 +115,10 @@ function CityDetail() {
         };
 
         setCityName(reverseDisplayName(locationData.displayName));
+        setCurrentCoords({
+          latitude: locationData.lat,
+          longitude: locationData.lon,
+        });
 
         const [weather, air] = await Promise.all([
           getWeatherData(locationData.lat, locationData.lon),
@@ -84,17 +135,35 @@ function CityDetail() {
     };
 
     fetchWeatherData();
-  }, [locationData]);
+  }, [locationData, favoriteData]);
 
   const handleNameEdit = () => {
     if (isEditingName && customName.trim()) setCityName(customName);
     setIsEditingName(!isEditingName);
   };
 
-  if (loading || !weatherData || !airQuality) {
+  if (loading) {
     return (
       <div className='min-h-screen bg-background flex items-center justify-center'>
         <div className='text-gray-600'>날씨 정보를 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (!weatherData || !airQuality) {
+    return (
+      <div className='min-h-screen bg-background flex items-center justify-center'>
+        <div className='text-center'>
+          <p className='text-gray-600 text-lg'>
+            해당 장소의 정보가 제공되지 않습니다.
+          </p>
+          <Button
+            onClick={() => navigate('/')}
+            className='mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600'
+          >
+            메인으로 돌아가기
+          </Button>
+        </div>
       </div>
     );
   }
@@ -170,7 +239,7 @@ function CityDetail() {
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     placeholder={cityName}
-                    className='text-xl font-bold text-gray-800 border-b-2 border-blue-500 outline-none bg-transparent'
+                    className='text-xl font-bold text-gray-800 border-b-2 border-gray-500 outline-none bg-transparent'
                     autoFocus
                   />
                 ) : (
@@ -188,8 +257,45 @@ function CityDetail() {
                   </button>
                 )}
               </div>
-              {/* 검색으로 들어온 경우 즐겨찾기 false */}
-              <FavoriteButton initialFavorite={!locationData} />
+              <FavoriteButton
+                isFavorite={
+                  currentCoords
+                    ? checkIsFavorite(
+                        currentCoords.latitude,
+                        currentCoords.longitude,
+                      )
+                    : false
+                }
+                onToggle={() => {
+                  if (!currentCoords) return;
+
+                  const existingFavorite = getFavoriteByCoordinates(
+                    currentCoords.latitude,
+                    currentCoords.longitude,
+                  );
+
+                  if (existingFavorite) {
+                    removeFavorite(existingFavorite.id);
+                  } else {
+                    if (!canAddMore) {
+                      alert('최대 6개까지만 즐겨찾기에 추가할 수 있습니다.');
+                      return;
+                    }
+                    try {
+                      addFavorite({
+                        name: cityName,
+                        latitude: currentCoords.latitude,
+                        longitude: currentCoords.longitude,
+                      });
+                    } catch (error) {
+                      if (error instanceof Error) {
+                        alert(error.message);
+                      }
+                    }
+                  }
+                }}
+                disabled={!currentCoords}
+              />
             </div>
 
             {/* 현재 날씨 */}

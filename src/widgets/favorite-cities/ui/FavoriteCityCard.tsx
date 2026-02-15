@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Card } from '@/shared/ui';
 import { IoIosArrowRoundDown, IoIosArrowRoundUp } from 'react-icons/io';
+import { FaStar } from 'react-icons/fa';
 
 type FavoriteCityCardProps = {
   city: string;
@@ -10,6 +11,8 @@ type FavoriteCityCardProps = {
   icon: ReactNode;
   condition: string;
   onClick?: () => void;
+  onEdit?: (newName: string) => void;
+  onDelete?: () => void;
 };
 
 export const FavoriteCityCard = ({
@@ -20,10 +23,29 @@ export const FavoriteCityCard = ({
   icon,
   condition,
   onClick,
+  onDelete,
 }: FavoriteCityCardProps) => {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete();
+    }
+  };
+
   return (
-    <Card onClick={onClick} className='py-3 px-4 hover:shadow-lg'>
-      <h3 className='text-sm font-semibold text-gray-700 mb-6'>{city}</h3>
+    <Card onClick={onClick} className='py-3 px-4 hover:shadow-lg relative'>
+      <div className='flex items-center justify-between mb-6'>
+        <h3 className='text-sm font-semibold text-gray-700'>{city}</h3>
+        {onDelete && (
+          <button
+            onClick={handleDelete}
+            className='text-gray-500 hover:text-gray-600 p-1'
+            title='즐겨찾기 해제'
+          >
+            <FaStar size={16} />
+          </button>
+        )}
+      </div>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-3'>
           <div className='text-3xl text-blue-400'>{icon}</div>
