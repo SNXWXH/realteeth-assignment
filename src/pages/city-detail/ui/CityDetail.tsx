@@ -1,185 +1,150 @@
-// import { useParams, useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-
-import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { CurrentWeather } from '@/widgets/current-weather';
 import { WeatherDetails } from '@/widgets/weather-details';
 import { HourlyForecast } from '@/widgets/hourly-forecast';
 import { WeeklyForecast } from '@/widgets/weekly-forecast';
 import { SunInfo } from '@/widgets/sun-info';
 import { AirQuality } from '@/widgets/air-quality';
-import { IoSunnyOutline, IoArrowBack } from 'react-icons/io5';
+import { IoArrowBack } from 'react-icons/io5';
 import { Button } from '@/shared/ui';
 import { FavoriteButton } from '@/features/favorite';
+import {
+  getWeatherData,
+  getAirQualityData,
+  type WeatherData,
+  type AirQualityData,
+} from '@/shared/api';
+import {
+  getWeatherIcon,
+  iconCodeToCondition,
+  formatTime,
+  formatDate,
+  getDayName,
+  formatSunTime,
+  calculateDaylight,
+  getAirQualityLevel,
+} from '@/shared/lib';
 
-const currentWeather = {
-  city: '부산',
-  temperature: 25,
-  high: 28,
-  low: 20,
-  icon: <IoSunnyOutline className='text-yellow-400' />,
-};
-
-const weatherDetails = {
-  feelsLike: 27,
-  humidity: 70,
-  windSpeed: 4.2,
-};
-
-const hourlyData = [
-  { time: '지금', temperature: 25, condition: 'sunny' as const },
-  {
-    time: '14시',
-    temperature: 26,
-    condition: 'sunny' as const,
-    percent: 0,
-  },
-  {
-    time: '15시',
-    temperature: 27,
-    condition: 'sunny' as const,
-    percent: 0,
-  },
-  {
-    time: '16시',
-    temperature: 28,
-    condition: 'cloudy' as const,
-    percent: 5,
-  },
-  {
-    time: '17시',
-    temperature: 27,
-    condition: 'cloudy' as const,
-    percent: 10,
-  },
-  {
-    time: '18시',
-    temperature: 26,
-    condition: 'cloudy' as const,
-    percent: 15,
-  },
-  {
-    time: '19시',
-    temperature: 24,
-    condition: 'cloudy' as const,
-    percent: 20,
-  },
-  {
-    time: '20시',
-    temperature: 23,
-    condition: 'sunny' as const,
-    percent: 10,
-  },
-  {
-    time: '21시',
-    temperature: 22,
-    condition: 'sunny' as const,
-    percent: 0,
-  },
-  {
-    time: '22시',
-    temperature: 21,
-    condition: 'sunny' as const,
-    percent: 0,
-  },
-  {
-    time: '23시',
-    temperature: 20,
-    condition: 'sunny' as const,
-    percent: 0,
-  },
-  {
-    time: '00시',
-    temperature: 19,
-    condition: 'sunny' as const,
-    percent: 0,
-  },
-];
-
-const weeklyData = [
-  {
-    day: '오늘',
-    date: '2/15',
-    condition: 'sunny' as const,
-    high: 28,
-    low: 20,
-    percent: 0,
-  },
-  {
-    day: '월',
-    date: '2/16',
-    condition: 'sunny' as const,
-    high: 27,
-    low: 19,
-    percent: 10,
-  },
-  {
-    day: '화',
-    date: '2/17',
-    condition: 'cloudy' as const,
-    high: 25,
-    low: 18,
-    percent: 30,
-  },
-  {
-    day: '수',
-    date: '2/18',
-    condition: 'cloudy' as const,
-    high: 24,
-    low: 17,
-    percent: 40,
-  },
-  {
-    day: '목',
-    date: '2/19',
-    condition: 'sunny' as const,
-    high: 26,
-    low: 19,
-    percent: 20,
-  },
-  {
-    day: '금',
-    date: '2/20',
-    condition: 'sunny' as const,
-    high: 28,
-    low: 20,
-    percent: 5,
-  },
-  {
-    day: '토',
-    date: '2/21',
-    condition: 'sunny' as const,
-    high: 29,
-    low: 21,
-    percent: 0,
-  },
-];
-
-const sunData = {
-  sunrise: '07:05',
-  sunset: '18:40',
-  daylight: '11시간 35분',
-};
-
-const airQualityData = {
-  aqi: 38,
-  level: 'good' as const,
-  pm25: 10,
-  pm10: 25,
-  o3: 42,
-  no2: 15,
+type SearchLocation = {
+  placeId: number;
+  displayName: string;
+  lat: number;
+  lon: number;
+  type: string;
 };
 
 function CityDetail() {
-  // const { cityId } = useParams();
   const navigate = useNavigate();
-  const [cityName, setCityName] = useState('부산');
+  const location = useLocation();
+  const locationData = location.state?.locationData as
+    | SearchLocation
+    | undefined;
+
+  const [cityName, setCityName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [customName, setCustomName] = useState('');
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchWeatherData = async () => {
+      if (!locationData) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        // displayName을 역순으로 변환함
+        const reverseDisplayName = (name: string) => {
+          const parts = name.split(',').map((part) => part.trim());
+          const filtered = parts.filter(
+            (part) => part !== '대한민국' && part !== 'South Korea',
+          );
+          return filtered.reverse().join(' ');
+        };
+
+        setCityName(reverseDisplayName(locationData.displayName));
+
+        const [weather, air] = await Promise.all([
+          getWeatherData(locationData.lat, locationData.lon),
+          getAirQualityData(locationData.lat, locationData.lon),
+        ]);
+
+        setWeatherData(weather);
+        setAirQuality(air);
+      } catch (error) {
+        console.error('날씨 데이터 조회 실패:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWeatherData();
+  }, [locationData]);
 
   const handleNameEdit = () => {
     if (isEditingName && customName.trim()) setCityName(customName);
     setIsEditingName(!isEditingName);
+  };
+
+  if (loading || !weatherData || !airQuality) {
+    return (
+      <div className='min-h-screen bg-background flex items-center justify-center'>
+        <div className='text-gray-600'>날씨 정보를 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  const currentWeatherData = {
+    city: cityName,
+    temperature: Math.round(weatherData.current.temp),
+    high: Math.round(weatherData.daily[0].temp.max),
+    low: Math.round(weatherData.daily[0].temp.min),
+    icon: getWeatherIcon(weatherData.current.icon),
+  };
+
+  const weatherDetailsData = {
+    feelsLike: Math.round(weatherData.current.feels_like),
+    humidity: weatherData.current.humidity,
+    windSpeed: weatherData.wind.speed,
+  };
+
+  const hourlyData = weatherData.hourly.map((item, index) => ({
+    time: index === 0 ? '지금' : formatTime(item.dt),
+    temperature: Math.round(item.temp),
+    condition: iconCodeToCondition(item.icon),
+    percent: Math.round(item.pop * 100),
+  }));
+
+  const weeklyData = weatherData.daily.map((item, index) => ({
+    day: getDayName(item.dt, index),
+    date: formatDate(item.dt),
+    condition: iconCodeToCondition(item.icon),
+    high: Math.round(item.temp.max),
+    low: Math.round(item.temp.min),
+    percent: Math.round(item.pop * 100),
+  }));
+
+  const sunData = {
+    sunrise: formatSunTime(weatherData.sun.sunrise),
+    sunset: formatSunTime(weatherData.sun.sunset),
+    daylight: calculateDaylight(
+      weatherData.sun.sunrise,
+      weatherData.sun.sunset,
+    ),
+  };
+
+  const airQualityDisplayData = {
+    aqi: Math.round(airQuality.khai),
+    level: getAirQualityLevel(airQuality.grade),
+    pm25: Math.round(airQuality.pm25),
+    pm10: Math.round(airQuality.pm10),
+    o3: Math.round(airQuality.o3),
+    no2: Math.round(airQuality.no2),
   };
 
   return (
@@ -213,21 +178,25 @@ function CityDetail() {
                     {cityName}
                   </h2>
                 )}
-                <button
-                  onClick={handleNameEdit}
-                  className='text-sm text-blue-600 hover:text-blue-800'
-                >
-                  {isEditingName ? '저장' : '수정'}
-                </button>
+                {/* 검색으로 들어온 경우 수정 버튼 숨기기 */}
+                {!locationData && (
+                  <button
+                    onClick={handleNameEdit}
+                    className='text-sm text-blue-600 hover:text-blue-800'
+                  >
+                    {isEditingName ? '저장' : '수정'}
+                  </button>
+                )}
               </div>
-              <FavoriteButton initialFavorite={true} />
+              {/* 검색으로 들어온 경우 즐겨찾기 false */}
+              <FavoriteButton initialFavorite={!locationData} />
             </div>
 
             {/* 현재 날씨 */}
-            <CurrentWeather {...currentWeather} city={cityName} />
+            <CurrentWeather {...currentWeatherData} city={cityName} />
 
             {/* 체감/습도/바람 */}
-            <WeatherDetails {...weatherDetails} />
+            <WeatherDetails {...weatherDetailsData} />
           </div>
         </div>
       </aside>
@@ -244,7 +213,7 @@ function CityDetail() {
           {/* 일출/일몰 & 대기질 */}
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <SunInfo {...sunData} />
-            <AirQuality data={airQualityData} />
+            <AirQuality data={airQualityDisplayData} />
           </div>
         </div>
       </main>
