@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { SearchInput } from '@/features/search';
 import { FavoriteButton } from '@/features/favorite';
 import { CurrentWeather } from '@/widgets/current-weather';
@@ -14,6 +15,7 @@ import {
   IoCloudyOutline,
   IoRainyOutline,
 } from 'react-icons/io5';
+import { getHybridLocation } from '@/shared/api';
 
 const currentWeather = {
   city: '서울',
@@ -274,6 +276,19 @@ const airQualityData = {
 
 function Main() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const locationData = await getHybridLocation();
+        console.log('Location:', locationData);
+      } catch (error) {
+        console.error('위치 정보 가져오기 실패:', error);
+      }
+    };
+
+    fetchLocation();
+  }, []);
 
   return (
     <div className='min-h-screen bg-background'>
