@@ -1,10 +1,9 @@
 import { Card } from '@/shared/ui';
-import { getWeatherIcon } from '@/shared/lib';
+import { getWeatherIconByCondition } from '@/shared/lib';
 
 type HourlyWeatherData = {
   time: string;
   temperature: number;
-  // 임시로 해둔거임
   condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy';
   percent?: number;
 };
@@ -29,7 +28,7 @@ export const HourlyForecast = ({ data }: HourlyForecastProps) => {
               {hour.time}
             </p>
             <div className='mb-2 text-blue-400'>
-              {getWeatherIcon({ condition: hour.condition })}
+              {getWeatherIconByCondition({ condition: hour.condition })}
             </div>
             <p className='text-lg font-bold text-gray-900 mb-1'>
               {hour.temperature}
