@@ -38,3 +38,19 @@ export const iconCodeToCondition = (iconCode: string): WeatherCondition => {
   if (iconCode.startsWith('13')) return 'snowy';
   return 'cloudy';
 };
+
+export const getWeatherConditionKorean = (iconCode: string): string => {
+  if (!iconCode) {
+    return '흐림';
+  }
+  if (iconCode.startsWith('01')) return '맑음';
+  if (iconCode.startsWith('02')) return '구름 조금';
+  if (iconCode.startsWith('03')) return '구름 많음';
+  if (iconCode.startsWith('04')) return '흐림';
+  if (iconCode.startsWith('09')) return '소나기';
+  if (iconCode.startsWith('10')) return '비';
+  if (iconCode.startsWith('11')) return '번개';
+  if (iconCode.startsWith('13')) return '눈';
+  if (iconCode.startsWith('50')) return '안개';
+  return '흐림';
+};

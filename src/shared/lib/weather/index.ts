@@ -1,1 +1,5 @@
-export { getWeatherIcon, iconCodeToCondition } from './weather-icons';
+export {
+  getWeatherIcon,
+  iconCodeToCondition,
+  getWeatherConditionKorean,
+} from './weather-icons';
