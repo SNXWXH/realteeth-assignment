@@ -70,25 +70,38 @@ function CityDetail() {
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [airQualityError, setAirQualityError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchWeatherData = async () => {
       if (favoriteData) {
         try {
           setLoading(true);
+          setAirQualityError(null);
           setCityName(favoriteData.name);
           setCurrentCoords({
             latitude: favoriteData.latitude,
             longitude: favoriteData.longitude,
           });
 
-          const [weather, air] = await Promise.all([
-            getWeatherData(favoriteData.latitude, favoriteData.longitude),
-            getAirQualityData(favoriteData.latitude, favoriteData.longitude),
-          ]);
-
+          const weather = await getWeatherData(
+            favoriteData.latitude,
+            favoriteData.longitude,
+          );
           setWeatherData(weather);
-          setAirQuality(air);
+
+          try {
+            const air = await getAirQualityData(
+              favoriteData.latitude,
+              favoriteData.longitude,
+            );
+            setAirQuality(air);
+          } catch (airError) {
+            if (airError instanceof Error) {
+              setAirQualityError(airError.message);
+            }
+            console.error('대기질 데이터 조회 실패:', airError);
+          }
         } catch (error) {
           console.error('날씨 데이터 조회 실패:', error);
         } finally {
@@ -104,6 +117,7 @@ function CityDetail() {
 
       try {
         setLoading(true);
+        setAirQualityError(null);
 
         // displayName을 역순으로 변환함
         const reverseDisplayName = (name: string) => {
@@ -120,13 +134,24 @@ function CityDetail() {
           longitude: locationData.lon,
         });
 
-        const [weather, air] = await Promise.all([
-          getWeatherData(locationData.lat, locationData.lon),
-          getAirQualityData(locationData.lat, locationData.lon),
-        ]);
-
+        const weather = await getWeatherData(
+          locationData.lat,
+          locationData.lon,
+        );
         setWeatherData(weather);
-        setAirQuality(air);
+
+        try {
+          const air = await getAirQualityData(
+            locationData.lat,
+            locationData.lon,
+          );
+          setAirQuality(air);
+        } catch (airError) {
+          if (airError instanceof Error) {
+            setAirQualityError(airError.message);
+          }
+          console.error('대기질 데이터 조회 실패:', airError);
+        }
       } catch (error) {
         console.error('날씨 데이터 조회 실패:', error);
       } finally {
@@ -150,7 +175,7 @@ function CityDetail() {
     );
   }
 
-  if (!weatherData || !airQuality) {
+  if (!weatherData) {
     return (
       <div className='min-h-screen bg-background flex items-center justify-center'>
         <div className='text-center'>
@@ -207,14 +232,16 @@ function CityDetail() {
     ),
   };
 
-  const airQualityDisplayData = {
-    aqi: Math.round(airQuality.khai),
-    level: getAirQualityLevel(airQuality.grade),
-    pm25: Math.round(airQuality.pm25),
-    pm10: Math.round(airQuality.pm10),
-    o3: Math.round(airQuality.o3),
-    no2: Math.round(airQuality.no2),
-  };
+  const airQualityDisplayData = airQuality
+    ? {
+        aqi: Math.round(airQuality.khai),
+        level: getAirQualityLevel(airQuality.grade),
+        pm25: Math.round(airQuality.pm25),
+        pm10: Math.round(airQuality.pm10),
+        o3: Math.round(airQuality.o3),
+        no2: Math.round(airQuality.no2),
+      }
+    : null;
 
   return (
     <div className='flex flex-col lg:flex-row min-h-screen'>
@@ -319,7 +346,20 @@ function CityDetail() {
           {/* 일출/일몰 & 대기질 */}
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <SunInfo {...sunData} />
-            <AirQuality data={airQualityDisplayData} />
+            {airQualityDisplayData ? (
+              <AirQuality data={airQualityDisplayData} />
+            ) : (
+              <div className='bg-white rounded-lg p-6 shadow-sm'>
+                <h3 className='text-lg font-semibold text-gray-800 mb-4'>
+                  대기질 정보
+                </h3>
+                <div className='flex items-center justify-center py-12'>
+                  <p className='text-gray-500 text-center'>
+                    {airQualityError || '대기질 정보를 불러올 수 없습니다.'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>

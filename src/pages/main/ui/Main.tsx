@@ -55,11 +55,13 @@ function Main() {
   const [favoriteWeatherData, setFavoriteWeatherData] = useState<
     Map<string, WeatherData>
   >(new Map());
+  const [airQualityError, setAirQualityError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setAirQualityError(null);
         const locationData = await getHybridLocation();
         const { latitude, longitude, city, district, state } = locationData;
 
@@ -71,13 +73,18 @@ function Main() {
 
         setCityName(detailedAddress);
 
-        const [weather, air] = await Promise.all([
-          getWeatherData(latitude, longitude),
-          getAirQualityData(latitude, longitude),
-        ]);
-
+        const weather = await getWeatherData(latitude, longitude);
         setWeatherData(weather);
-        setAirQuality(air);
+
+        try {
+          const air = await getAirQualityData(latitude, longitude);
+          setAirQuality(air);
+        } catch (airError) {
+          if (airError instanceof Error) {
+            setAirQualityError(airError.message);
+          }
+          console.error('대기질 데이터 조회 실패:', airError);
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -110,7 +117,7 @@ function Main() {
     if (favorites.length > 0) fetchFavoriteWeather();
   }, [favorites]);
 
-  if (loading || !weatherData || !airQuality) {
+  if (loading || !weatherData) {
     return (
       <div className='min-h-screen bg-background flex items-center justify-center'>
         <div className='text-gray-600'>날씨 정보를 불러오는 중...</div>
@@ -157,14 +164,16 @@ function Main() {
     ),
   };
 
-  const airQualityDisplayData = {
-    aqi: Math.round(airQuality.khai),
-    level: getAirQualityLevel(airQuality.grade),
-    pm25: Math.round(airQuality.pm25),
-    pm10: Math.round(airQuality.pm10),
-    o3: Math.round(airQuality.o3),
-    no2: Math.round(airQuality.no2),
-  };
+  const airQualityDisplayData = airQuality
+    ? {
+        aqi: Math.round(airQuality.khai),
+        level: getAirQualityLevel(airQuality.grade),
+        pm25: Math.round(airQuality.pm25),
+        pm10: Math.round(airQuality.pm10),
+        o3: Math.round(airQuality.o3),
+        no2: Math.round(airQuality.no2),
+      }
+    : null;
 
   return (
     <div className='min-h-screen bg-background'>
@@ -305,7 +314,21 @@ function Main() {
 
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
             <SunInfo {...sunData} />
-            <AirQuality data={airQualityDisplayData} />
+            {airQualityDisplayData ? (
+              <AirQuality data={airQualityDisplayData} />
+            ) : (
+              <div className='bg-white rounded-lg p-6 shadow-sm'>
+                <h3 className='text-lg font-semibold text-gray-800 mb-4'>
+                  대기질 정보
+                </h3>
+                <div className='flex items-center justify-center py-12'>
+                  <p className='text-gray-500 text-center'>
+                    {airQualityError ||
+                      '대기질 정보를 불러올 수 없습니다.'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
