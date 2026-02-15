@@ -5,13 +5,13 @@ import {
   IoSnowOutline,
 } from 'react-icons/io5';
 
-type WeatherCondition = 'sunny' | 'cloudy' | 'rainy' | 'snowy';
-
 type GetWeatherIconOptions = {
-  condition: WeatherCondition;
+  condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy';
 };
 
-export const getWeatherIcon = ({ condition }: GetWeatherIconOptions) => {
+export const getWeatherIconByCondition = ({
+  condition,
+}: GetWeatherIconOptions) => {
   switch (condition) {
     case 'sunny':
       return <IoSunnyOutline className={` text-4xl text-yellow-300`} />;

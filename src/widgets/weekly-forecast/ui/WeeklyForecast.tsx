@@ -1,10 +1,9 @@
 import { Card } from '@/shared/ui';
-import { getWeatherIcon } from '@/shared/lib';
+import { getWeatherIconByCondition } from '@/shared/lib';
 
 type DailyWeatherData = {
   day: string;
   date: string;
-  //임시로 해둠
   condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy';
   high: number;
   low: number;
@@ -19,18 +18,18 @@ export const WeeklyForecast = ({ data }: WeeklyForecastProps) => {
   return (
     <Card className='overflow-hidden'>
       <h3 className='text-lg font-semibold text-gray-800 mb-4'>일별 예보</h3>
-      <div className='flex justify-center overflow-x-auto gap-6 pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100'>
+      <div className='flex justify-between overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100'>
         {data.map((day, index) => (
           <div
             key={index}
-            className='flex flex-col items-center py-3 px-4 rounded-lg '
+            className='flex flex-col items-center py-3 flex-1 rounded-lg'
           >
             <p className='text-sm font-semibold text-gray-800 mb-1'>
               {day.day}
             </p>
             <p className='text-xs text-gray-500 mb-2'>{day.date}</p>
             <div className='mb-2'>
-              {getWeatherIcon({ condition: day.condition })}
+              {getWeatherIconByCondition({ condition: day.condition })}
             </div>
             <p className='text-xs text-blue-500 mb-2 h-4'>
               {day.percent !== undefined && day.percent > 0

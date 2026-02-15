@@ -7,9 +7,18 @@ export type {
   GeolocationError,
 } from './browser-geolocation';
 
-export {
-  getHybridLocation,
-  getBrowserLocationOnly,
-  getIPLocationOnly,
-} from './hybrid-geolocation';
+export { getHybridLocation } from './hybrid-geolocation';
 export type { HybridLocationResult } from './hybrid-geolocation';
+
+export { getWeatherData } from './weather';
+export type {
+  CurrentWeather,
+  Wind,
+  HourlyWeather,
+  DailyWeather,
+  SunTime,
+  WeatherData,
+} from './weather';
+
+export { getAirQualityData } from './air-quality';
+export type { AirQualityData } from './air-quality';

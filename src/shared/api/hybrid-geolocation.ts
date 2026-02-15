@@ -2,6 +2,20 @@ import axios from 'axios';
 
 const API_KEY = import.meta.env.VITE_GEOLOCATION_API_KEY;
 const BASE_URL = 'https://api.ipgeolocation.io';
+const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
+
+type NominatimResult = {
+  address: {
+    road?: string;
+    suburb?: string;
+    city?: string;
+    county?: string;
+    state?: string;
+    country?: string;
+    country_code?: string;
+    [key: string]: string | undefined;
+  };
+};
 
 type GeolocationData = {
   ip: string;
@@ -57,6 +71,7 @@ export type HybridLocationResult = {
   latitude: number;
   longitude: number;
   city?: string;
+  district?: string;
   state?: string;
   country?: string;
   source: 'browser' | 'ip';
@@ -140,9 +155,62 @@ async function getCurrentLocationByIP(): Promise<GeolocationData> {
   }
 }
 
+async function reverseGeocodeNominatim(
+  lat: number,
+  lon: number,
+): Promise<NominatimResult | null> {
+  try {
+    const response = await axios.get<NominatimResult>(
+      `${NOMINATIM_BASE_URL}/reverse`,
+      {
+        params: {
+          lat,
+          lon,
+          format: 'json',
+          addressdetails: 1,
+          'accept-language': 'ko',
+        },
+        headers: {
+          'User-Agent': 'WeatherApp/1.0',
+        },
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Nominatim 역지오코딩 오류:', error);
+    return null;
+  }
+}
+
 export async function getHybridLocation(): Promise<HybridLocationResult> {
   try {
     const browserLocation = await getBrowserLocation();
+
+    try {
+      const nominatimResult = await reverseGeocodeNominatim(
+        browserLocation.latitude,
+        browserLocation.longitude,
+      );
+
+      if (nominatimResult?.address) {
+        const addr = nominatimResult.address;
+
+        return {
+          latitude: browserLocation.latitude,
+          longitude: browserLocation.longitude,
+          city: addr.suburb,
+          district: addr.city || addr.county,
+          state: addr.state,
+          country: addr.country,
+          source: 'browser',
+          accuracy: browserLocation.accuracy,
+          fullData: browserLocation,
+        };
+      }
+    } catch (geocodingError) {
+      console.warn('역지오코딩 실패:', geocodingError);
+    }
 
     return {
       latitude: browserLocation.latitude,
@@ -159,6 +227,7 @@ export async function getHybridLocation(): Promise<HybridLocationResult> {
         latitude: parseFloat(ipLocation.latitude),
         longitude: parseFloat(ipLocation.longitude),
         city: ipLocation.city,
+        district: ipLocation.district,
         state: ipLocation.state_prov,
         country: ipLocation.country_name,
         source: 'ip',
@@ -172,28 +241,3 @@ export async function getHybridLocation(): Promise<HybridLocationResult> {
   }
 }
 
-export async function getBrowserLocationOnly(): Promise<HybridLocationResult> {
-  const browserLocation = await getBrowserLocation();
-
-  return {
-    latitude: browserLocation.latitude,
-    longitude: browserLocation.longitude,
-    source: 'browser',
-    accuracy: browserLocation.accuracy,
-    fullData: browserLocation,
-  };
-}
-
-export async function getIPLocationOnly(): Promise<HybridLocationResult> {
-  const ipLocation = await getCurrentLocationByIP();
-
-  return {
-    latitude: parseFloat(ipLocation.latitude),
-    longitude: parseFloat(ipLocation.longitude),
-    city: ipLocation.city,
-    state: ipLocation.state_prov,
-    country: ipLocation.country_name,
-    source: 'ip',
-    fullData: ipLocation,
-  };
-}
