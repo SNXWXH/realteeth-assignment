@@ -1,6 +1,6 @@
 const AIR_KOREA_API_KEY = import.meta.env.VITE_AIR_KOREA_API_KEY;
 const AIR_KOREA_BASE_URL =
-  'http://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
+  'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
 
 export type AirQualityData = {
   grade: string;
