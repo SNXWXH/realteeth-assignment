@@ -26,30 +26,50 @@ React + TypeScript + Tanstack Query 기반의 날씨 정보 제공 웹 애플리
 
 ```
 src/
-├── app/                  # 애플리케이션 진입점
-│   ├── App.tsx          # 라우터 설정
+├── app/                           # 애플리케이션 진입점
+│   ├── App.tsx                   # 라우터 설정
+│   ├── providers/                # 전역 Provider 설정
+│   ├── styles/                   # 전역 스타일
 │   └── index.ts
-├── pages/               # 페이지 컴포넌트
-│   ├── main/           # 메인 대시보드
-│   └── city-detail/    # 도시 상세 정보
-├── features/            # 기능 모듈
-│   ├── search/         # 위치 검색
-│   └── favorite/       # 즐겨찾기 토글
-├── widgets/             # 재사용 UI 위젯
-│   ├── current-weather/
-│   ├── weather-details/
-│   ├── hourly-forecast/
-│   ├── weekly-forecast/
-│   ├── sun-info/
-│   ├── air-quality/
-│   └── favorite-cities/
-└── shared/              # 공유 리소스
-    ├── api/            # API 클라이언트
-    ├── hooks/          # React Query 훅
-    ├── lib/            # 유틸리티 함수
-    ├── types/          # 타입 정의
-    ├── ui/             # 기본 UI 컴포넌트
-    └── data/           # 정적 데이터
+├── pages/                         # 페이지 컴포넌트
+│   ├── main/                     # 메인 대시보드
+│   │   └── ui/                   # 페이지 UI
+│   └── city-detail/              # 도시 상세 정보
+│       └── ui/                   # 페이지 UI
+├── features/                      # 기능 모듈 (비즈니스 로직)
+│   ├── location-detection/       # 현재 위치 감지
+│   │   └── model/                # React Query 훅
+│   ├── location-search/          # 위치 검색
+│   │   ├── api/                  # Nominatim API
+│   │   ├── model/                # 검색 로직
+│   │   └── ui/                   # 검색 입력 UI
+│   ├── weather-data/             # 날씨 데이터
+│   │   └── model/                # React Query 훅
+│   └── favorite-management/      # 즐겨찾기 관리
+│       ├── model/                # 즐겨찾기 상태 관리
+│       └── ui/                   # 즐겨찾기 버튼
+├── widgets/                       # 재사용 UI 위젯 (조합 컴포넌트)
+│   ├── current-weather/          # 현재 날씨 카드
+│   ├── weather-details/          # 날씨 상세 정보
+│   ├── hourly-forecast/          # 시간별 예보
+│   ├── weekly-forecast/          # 주간 예보
+│   ├── sun-info/                 # 일출/일몰 정보
+│   ├── air-quality/              # 대기질 정보
+│   ├── favorite-cities/          # 즐겨찾기 도시 목록
+│   └── layout/                   # 레이아웃 컴포넌트
+└── shared/                        # 공유 리소스
+    ├── api/                      # API 클라이언트
+    ├── config/                   # 설정 파일
+    ├── data/                     # 정적 데이터
+    ├── hooks/                    # 공용 React 훅
+    ├── lib/                      # 유틸리티 함수
+    │   ├── air-quality/          # 대기질 유틸
+    │   ├── date/                 # 날짜 포맷팅
+    │   └── weather/              # 날씨 아이콘 등
+    └── ui/                       # 기본 UI 컴포넌트
+        ├── Button/
+        ├── Card/
+        └── Input/
 ```
 
 ## **구현한 기능**
