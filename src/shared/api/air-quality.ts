@@ -89,6 +89,10 @@ export async function getAirQualityData(
 
   const res = await fetch(url);
 
+  if (res.status === 429) {
+    throw new Error('API 호출이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+  }
+
   if (!res.ok) throw new Error('대기질 데이터를 패치하는데 실패했습니다');
 
   const data: AirKoreaResponse = await res.json();
