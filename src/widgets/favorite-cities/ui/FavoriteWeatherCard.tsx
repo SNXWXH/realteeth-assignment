@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { FavoriteCityCard } from './FavoriteCityCard.tsx';
-import { useWeatherQuery } from '@/shared/hooks';
+import { useWeatherQuery } from '@/features/weather-data';
 import { getWeatherIcon, getWeatherConditionKorean } from '@/shared/lib';
 
 type FavoriteData = {
