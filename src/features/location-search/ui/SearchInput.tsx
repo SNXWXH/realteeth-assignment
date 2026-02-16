@@ -2,7 +2,7 @@ import { useState, type ChangeEvent, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/shared/ui';
 import { IoSearch } from 'react-icons/io5';
-import { searchLocation } from '@/shared/data/nominatim.api';
+import { searchLocation } from '../api/nominatim.api';
 import koreaDistricts from '@/shared/data/korea_districts.json';
 
 type SearchLocation = {
