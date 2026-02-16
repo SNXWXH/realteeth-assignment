@@ -46,7 +46,14 @@ export const searchLocation = async (
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 429)
+        throw new Error('API 호출이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+      if (response.status >= 500)
+        throw new Error(
+          '위치 검색 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.',
+        );
+
+      throw new Error(`위치 검색에 실패했습니다 (상태: ${response.status})`);
     }
 
     const data: NominatimResponse[] = await response.json();

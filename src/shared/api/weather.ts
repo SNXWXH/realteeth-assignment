@@ -99,8 +99,21 @@ export async function getWeatherData(
     ),
   ]);
 
-  if (!currentRes.ok || !forecastRes.ok)
-    throw new Error('Failed to fetch weather data');
+  const errorRes = !currentRes.ok
+    ? currentRes
+    : !forecastRes.ok
+      ? forecastRes
+      : null;
+  if (errorRes) {
+    if (errorRes.status === 429)
+      throw new Error('API 호출이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+    if (errorRes.status >= 500)
+      throw new Error(
+        '날씨 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.',
+      );
+
+    throw new Error('날씨 데이터를 불러오는데 실패했습니다.');
+  }
 
   const currentData: OpenWeatherCurrentResponse = await currentRes.json();
   const forecastData: OpenWeatherForecastResponse = await forecastRes.json();

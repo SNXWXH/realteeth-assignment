@@ -56,10 +56,19 @@ export async function getCurrentLocation(): Promise<GeolocationData> {
 
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error))
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status === 429)
+        throw new Error('API 호출이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+      if (status && status >= 500)
+        throw new Error(
+          '위치 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.',
+        );
+
       throw new Error(
         `위치 정보를 가져오는데 실패했습니다: ${error.response?.data?.message || error.message}`,
       );
+    }
 
     throw error;
   }
@@ -82,10 +91,23 @@ export async function getLocationByIP(ip: string): Promise<GeolocationData> {
 
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error))
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status === 429) {
+        throw new Error('API 호출이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+      }
+      if (status === 401 || status === 403) {
+        throw new Error('API 키가 유효하지 않습니다. 관리자에게 문의하세요.');
+      }
+      if (status && status >= 500) {
+        throw new Error(
+          '위치 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.',
+        );
+      }
       throw new Error(
         `IP ${ip}의 위치 정보를 가져오는데 실패했습니다: ${error.response?.data?.message || error.message}`,
       );
+    }
 
     throw error;
   }

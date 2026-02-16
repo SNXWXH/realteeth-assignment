@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CurrentWeather } from '@/widgets/current-weather';
 import { WeatherDetails } from '@/widgets/weather-details';
 import { HourlyForecast } from '@/widgets/hourly-forecast';
@@ -10,12 +10,6 @@ import { IoArrowBack } from 'react-icons/io5';
 import { Button } from '@/shared/ui';
 import { FavoriteButton } from '@/features/favorite';
 import {
-  getWeatherData,
-  getAirQualityData,
-  type WeatherData,
-  type AirQualityData,
-} from '@/shared/api';
-import {
   getWeatherIcon,
   iconCodeToCondition,
   formatTime,
@@ -25,7 +19,11 @@ import {
   calculateDaylight,
   getAirQualityLevel,
 } from '@/shared/lib';
-import { useFavorites } from '@/shared/hooks';
+import {
+  useFavorites,
+  useWeatherQuery,
+  useAirQualityQuery,
+} from '@/shared/hooks';
 
 type SearchLocation = {
   placeId: number;
@@ -60,89 +58,52 @@ function CityDetail() {
     canAddMore,
   } = useFavorites();
 
-  const [cityName, setCityName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [customName, setCustomName] = useState('');
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentCoords, setCurrentCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
 
-  useEffect(() => {
-    const fetchWeatherData = async () => {
-      if (favoriteData) {
-        try {
-          setLoading(true);
-          setCityName(favoriteData.name);
-          setCurrentCoords({
-            latitude: favoriteData.latitude,
-            longitude: favoriteData.longitude,
-          });
+  // 좌표 계산
+  const coords = favoriteData
+    ? { latitude: favoriteData.latitude, longitude: favoriteData.longitude }
+    : locationData
+      ? { latitude: locationData.lat, longitude: locationData.lon }
+      : null;
 
-          const [weather, air] = await Promise.all([
-            getWeatherData(favoriteData.latitude, favoriteData.longitude),
-            getAirQualityData(favoriteData.latitude, favoriteData.longitude),
-          ]);
+  // 날씨 데이터 조회
+  const { data: weatherData, isLoading: isWeatherLoading } = useWeatherQuery(
+    coords?.latitude,
+    coords?.longitude,
+  );
 
-          setWeatherData(weather);
-          setAirQuality(air);
-        } catch (error) {
-          console.error('날씨 데이터 조회 실패:', error);
-        } finally {
-          setLoading(false);
-        }
-        return;
-      }
+  // 대기질 데이터 조회
+  const { data: airQuality, error: airQualityError } = useAirQualityQuery(
+    coords?.latitude,
+    coords?.longitude,
+  );
 
-      if (!locationData) {
-        setLoading(false);
-        return;
-      }
+  // 도시 이름 계산
+  const getCityName = () => {
+    if (favoriteData) return favoriteData.name;
+    if (!locationData) return '';
 
-      try {
-        setLoading(true);
-
-        // displayName을 역순으로 변환함
-        const reverseDisplayName = (name: string) => {
-          const parts = name.split(',').map((part) => part.trim());
-          const filtered = parts.filter(
-            (part) => part !== '대한민국' && part !== 'South Korea',
-          );
-          return filtered.reverse().join(' ');
-        };
-
-        setCityName(reverseDisplayName(locationData.displayName));
-        setCurrentCoords({
-          latitude: locationData.lat,
-          longitude: locationData.lon,
-        });
-
-        const [weather, air] = await Promise.all([
-          getWeatherData(locationData.lat, locationData.lon),
-          getAirQualityData(locationData.lat, locationData.lon),
-        ]);
-
-        setWeatherData(weather);
-        setAirQuality(air);
-      } catch (error) {
-        console.error('날씨 데이터 조회 실패:', error);
-      } finally {
-        setLoading(false);
-      }
+    const reverseDisplayName = (name: string) => {
+      const parts = name.split(',').map((part) => part.trim());
+      const filtered = parts.filter(
+        (part) => part !== '대한민국' && part !== 'South Korea',
+      );
+      return filtered.reverse().join(' ');
     };
 
-    fetchWeatherData();
-  }, [locationData, favoriteData]);
+    return reverseDisplayName(locationData.displayName);
+  };
+
+  const [cityName, setCityName] = useState(getCityName());
 
   const handleNameEdit = () => {
     if (isEditingName && customName.trim()) setCityName(customName);
     setIsEditingName(!isEditingName);
   };
 
-  if (loading) {
+  if (isWeatherLoading) {
     return (
       <div className='min-h-screen bg-background flex items-center justify-center'>
         <div className='text-gray-600'>날씨 정보를 불러오는 중...</div>
@@ -150,7 +111,7 @@ function CityDetail() {
     );
   }
 
-  if (!weatherData || !airQuality) {
+  if (!weatherData) {
     return (
       <div className='min-h-screen bg-background flex items-center justify-center'>
         <div className='text-center'>
@@ -207,14 +168,16 @@ function CityDetail() {
     ),
   };
 
-  const airQualityDisplayData = {
-    aqi: Math.round(airQuality.khai),
-    level: getAirQualityLevel(airQuality.grade),
-    pm25: Math.round(airQuality.pm25),
-    pm10: Math.round(airQuality.pm10),
-    o3: Math.round(airQuality.o3),
-    no2: Math.round(airQuality.no2),
-  };
+  const airQualityDisplayData = airQuality
+    ? {
+        aqi: Math.round(airQuality.khai),
+        level: getAirQualityLevel(airQuality.grade),
+        pm25: Math.round(airQuality.pm25),
+        pm10: Math.round(airQuality.pm10),
+        o3: Math.round(airQuality.o3),
+        no2: Math.round(airQuality.no2),
+      }
+    : null;
 
   return (
     <div className='flex flex-col lg:flex-row min-h-screen'>
@@ -259,19 +222,16 @@ function CityDetail() {
               </div>
               <FavoriteButton
                 isFavorite={
-                  currentCoords
-                    ? checkIsFavorite(
-                        currentCoords.latitude,
-                        currentCoords.longitude,
-                      )
+                  coords
+                    ? checkIsFavorite(coords.latitude, coords.longitude)
                     : false
                 }
                 onToggle={() => {
-                  if (!currentCoords) return;
+                  if (!coords) return;
 
                   const existingFavorite = getFavoriteByCoordinates(
-                    currentCoords.latitude,
-                    currentCoords.longitude,
+                    coords.latitude,
+                    coords.longitude,
                   );
 
                   if (existingFavorite) {
@@ -284,8 +244,8 @@ function CityDetail() {
                     try {
                       addFavorite({
                         name: cityName,
-                        latitude: currentCoords.latitude,
-                        longitude: currentCoords.longitude,
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
                       });
                     } catch (error) {
                       if (error instanceof Error) {
@@ -294,7 +254,7 @@ function CityDetail() {
                     }
                   }
                 }}
-                disabled={!currentCoords}
+                disabled={!coords}
               />
             </div>
 
@@ -319,7 +279,21 @@ function CityDetail() {
           {/* 일출/일몰 & 대기질 */}
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <SunInfo {...sunData} />
-            <AirQuality data={airQualityDisplayData} />
+            {airQualityDisplayData ? (
+              <AirQuality data={airQualityDisplayData} />
+            ) : (
+              <div className='bg-white rounded-lg p-6 shadow-sm'>
+                <h3 className='text-lg font-semibold text-gray-800 mb-4'>
+                  대기질 정보
+                </h3>
+                <div className='flex items-center justify-center py-12'>
+                  <p className='text-gray-500 text-center'>
+                    {airQualityError?.message ||
+                      '대기질 정보를 불러올 수 없습니다.'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
