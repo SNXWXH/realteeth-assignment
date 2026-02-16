@@ -56,6 +56,7 @@ function CityDetail() {
     isFavorite: checkIsFavorite,
     getFavoriteByCoordinates,
     canAddMore,
+    updateFavoriteName,
   } = useFavorites();
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -99,7 +100,11 @@ function CityDetail() {
   const [cityName, setCityName] = useState(getCityName());
 
   const handleNameEdit = () => {
-    if (isEditingName && customName.trim()) setCityName(customName);
+    if (isEditingName && customName.trim()) {
+      setCityName(customName);
+      // 즐겨찾기로 들어온 경우 localStorage 업데이트
+      if (favoriteData) updateFavoriteName(favoriteData.id, customName);
+    }
     setIsEditingName(!isEditingName);
   };
 
