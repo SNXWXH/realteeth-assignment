@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
-import { SearchInput } from '@/features/search';
-import { FavoriteButton } from '@/features/favorite';
+import { SearchInput } from '@/features/location-search';
+import { FavoriteButton, useFavorites } from '@/features/favorite-management';
+import { useWeatherQuery, useAirQualityQuery } from '@/features/weather-data';
+import { useLocationQuery } from '@/features/location-detection';
 import { CurrentWeather } from '@/widgets/current-weather';
 import { WeatherDetails } from '@/widgets/weather-details';
 import { HourlyForecast } from '@/widgets/hourly-forecast';
@@ -18,12 +20,6 @@ import {
   calculateDaylight,
   getAirQualityLevel,
 } from '@/shared/lib';
-import {
-  useFavorites,
-  useLocationQuery,
-  useWeatherQuery,
-  useAirQualityQuery,
-} from '@/shared/hooks';
 
 function Main() {
   const {

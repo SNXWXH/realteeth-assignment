@@ -8,7 +8,8 @@ import { SunInfo } from '@/widgets/sun-info';
 import { AirQuality } from '@/widgets/air-quality';
 import { IoArrowBack } from 'react-icons/io5';
 import { Button } from '@/shared/ui';
-import { FavoriteButton } from '@/features/favorite';
+import { FavoriteButton, useFavorites } from '@/features/favorite-management';
+import { useWeatherQuery, useAirQualityQuery } from '@/features/weather-data';
 import {
   getWeatherIcon,
   iconCodeToCondition,
@@ -19,11 +20,6 @@ import {
   calculateDaylight,
   getAirQualityLevel,
 } from '@/shared/lib';
-import {
-  useFavorites,
-  useWeatherQuery,
-  useAirQualityQuery,
-} from '@/shared/hooks';
 
 type SearchLocation = {
   placeId: number;
